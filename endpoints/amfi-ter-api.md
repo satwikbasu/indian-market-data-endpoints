@@ -8,7 +8,7 @@ Daily Total Expense Ratio for every Indian mutual-fund scheme, broken into 5 SEB
 
 Two endpoints; call `populate-mf` once at start to get AMC IDs, then `populate-te-rdata-revised` per (AMC × month) pair.
 
-### Endpoint 1 — list AMCs
+### Endpoint 1: list AMCs
 
 ```http
 GET https://www.amfiindia.com/api/populate-mf
@@ -24,7 +24,7 @@ Returns:
 
 55 AMCs as of 2026-05-21. `mfId` (string of int) feeds `MF_ID` in endpoint 2.
 
-### Endpoint 2 — TER rows for one AMC × one month
+### Endpoint 2: TER rows for one AMC × one month
 
 ```http
 GET https://www.amfiindia.com/api/populate-te-rdata-revised
@@ -82,13 +82,13 @@ Returns:
 |---|---|
 | `NSDLSchemeCode` | NSDL/SEBI registration code (slash-delimited). **Not** our AMFI scheme_code |
 | `Scheme_Name` | Fund-family name (no plan suffix); the match anchor for joining to `schemes.scheme_name` |
-| `TER_Date` | ISO timestamp with time/zone components — slice `[:10]` before `date.fromisoformat()` |
+| `TER_Date` | ISO timestamp with time/zone components, slice `[:10]` before `date.fromisoformat()` |
 | `R_*` / `D_*` | Regular / Direct plan values. One AMFI row → multiple `schemes.scheme_code` rows after plan-suffix split |
 | `R_BER`, `D_BER` | Base Expense Ratio (manager fee, marketing, ops) |
 | `R_StatutoryLevies`, `D_StatutoryLevies` | GST (currently 18% of BER for equity, 5% for debt) |
-| `R_BrokerageCost`, `D_BrokerageCost` | Trading commissions — fluctuates daily |
+| `R_BrokerageCost`, `D_BrokerageCost` | Trading commissions, fluctuates daily |
 | `R_TransactionCost`, `D_TransactionCost` | STT / stamp duty / exchange charges |
-| `R_TER`, `D_TER` | Sum of the 4 components — the "full" TER |
+| `R_TER`, `D_TER` | Sum of the 4 components, the "full" TER |
 
 ### Sub-component reconciliation
 
@@ -116,7 +116,7 @@ No auth, no cookies, no referrer, no `X-Requested-With`. The API is fully cold-c
 
 ## Rate limit & throttle
 
-AMFI rate-limits **aggressively** — far more than NSE Indices. Characterised across multiple test bursts:
+AMFI rate-limits **aggressively**, far more than NSE Indices. Characterised across multiple test bursts:
 
 | Burst pattern | Failure mode |
 |---|---|
@@ -126,7 +126,7 @@ AMFI rate-limits **aggressively** — far more than NSE Indices. Characterised a
 
 **Production recommendation**: 1 s sleep + exponential backoff. Full all-AMCs × 1-month census = ~10–15 min wall.
 
-The rate-limit's "bad JSON instead of HTTP 429" pattern means **you cannot rely on `response.status_code`** — you must `try: json.loads(body)` and treat parse failure as a rate-limit signal. This is documented in `scripts/fetch_amfi_ter.py`.
+The rate-limit's "bad JSON instead of HTTP 429" pattern means **you cannot rely on `response.status_code`**, you must `try: json.loads(body)` and treat parse failure as a rate-limit signal. This is documented in `scripts/fetch_amfi_ter.py`.
 
 ## Name-match strategy (joining to a scheme dimension table you maintain locally)
 

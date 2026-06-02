@@ -1,6 +1,6 @@
 # Examples
 
-Each script is self-contained — just `pip install -e ../wrappers/python` and run.
+Each script is self-contained, just `pip install -e ../wrappers/python` and run.
 
 | Script | What it does |
 |---|---|

@@ -15,25 +15,25 @@ pip install -e ".[xls,xbrl]"
 ```python
 from indian_markets import amfi, nse, bse
 
-# AMFI — latest NAV for every Indian MF scheme
+# AMFI, latest NAV for every Indian MF scheme
 for row in amfi.fetch_navall_rows():
     print(row.scheme_code, row.scheme_name, row.nav, row.nav_date)
 
-# AMFI — historical NAV in 7-day chunks
+# AMFI, historical NAV in 7-day chunks
 for row in amfi.fetch_navhistory_rows("01-Jan-2024", "07-Jan-2024"):
     ...
 
-# AMFI — list AMCs + TER for one AMC × one month
+# AMFI, list AMCs + TER for one AMC × one month
 amcs = amfi.fetch_amc_list()
 ter = amfi.fetch_ter(mf_id=9, month="05-2026")  # 9 = HDFC
 
-# NSE — daily multi-index CSV
+# NSE, daily multi-index CSV
 rows = nse.fetch_indices_csv(year=2024, month=5, day=22)
 
-# NSE Indices — Total Return Index, inception-to-today, one POST
+# NSE Indices, Total Return Index, inception-to-today, one POST
 tri = nse.fetch_tri("NIFTY 50", "01-Jan-1999", "22-May-2026")
 
-# BSE — quarterly filings index for a scrip; then download one iXBRL
+# BSE, quarterly filings index for a scrip; then download one iXBRL
 index = bse.fetch_shareholding_index(scripcode=500325)  # Reliance
 filing_bytes = bse.fetch_xbrl_filing(index[0]["XBRLAttachment"])
 ```

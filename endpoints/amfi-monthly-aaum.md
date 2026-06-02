@@ -1,6 +1,6 @@
 # AMFI Monthly / Quarterly Categorywise AAUM disclosure files
 
-Monthly and quarterly Average Assets Under Management published by AMFI as static XLS / PDF downloads on the legacy `portal.amfiindia.com` subdomain. Data is **industry-aggregate, broken down by SEBI scheme category** — NOT per-AMC and NOT per-scheme.
+Monthly and quarterly Average Assets Under Management published by AMFI as static XLS / PDF downloads on the legacy `portal.amfiindia.com` subdomain. Data is **industry-aggregate, broken down by SEBI scheme category**, NOT per-AMC and NOT per-scheme.
 
 **Discovered**: 2026-06-01, while researching whether AMFI categorywise AAUM could substitute for per-fund AUM in a capacity-strain signal. The new `www.amfiindia.com` Next.js site embeds these URLs in the SSR'd payload of `/research-information/amfi-data`.
 
@@ -25,7 +25,7 @@ Working example: `https://portal.amfiindia.com/spages/amapr2026repo.xls`
 Coverage observed (probe 2026-06-01):
 - **PDF**: Jan 2009 → Apr 2026 continuous (latest available; May 2026 not yet posted)
 - **XLS**: from ~mid-2018 → Apr 2026 continuous
-- Some revised re-uploads with `repo` → `reporevised` suffix (e.g. `amdec2021reporevised.xls`, `amjan2022reporevised.xls`) — both URL variants are live; the `revised` is the corrected one if both exist
+- Some revised re-uploads with `repo` → `reporevised` suffix (e.g. `amdec2021reporevised.xls`, `amjan2022reporevised.xls`), both URL variants are live; the `revised` is the corrected one if both exist
 - Publishing cadence: ~10–15 days after month-end (Apr 2026 was live by 2026-06-01)
 
 ### Quarterly categorywise AAUM
@@ -56,7 +56,7 @@ GET https://portal.amfiindia.com/spages/Sub-classification-{MMM}{YY}.{xls,pdf}
 
 Example: `https://portal.amfiindia.com/spages/Sub-classification-Apr23.xls` (case-sensitive month abbreviation: `Apr`, `Aug`, `Dec` etc.)
 
-Quirk: the latest 2026 sub-classification URLs listed on the page (e.g. `Sub-classification-Apr26.xls`) currently 404. The 2023–2025 issues are live. This file breaks "Other Schemes" (ETFs, FoFs, index funds, gold ETFs) into finer categories — **not relevant to a per-fund capacity signal**.
+Quirk: the latest 2026 sub-classification URLs listed on the page (e.g. `Sub-classification-Apr26.xls`) currently 404. The 2023–2025 issues are live. This file breaks "Other Schemes" (ETFs, FoFs, index funds, gold ETFs) into finer categories, **not relevant to a per-fund capacity signal**.
 
 ## Worked example (the load-bearing one for this catalogue entry)
 
@@ -116,14 +116,14 @@ Static-asset CDN. No auth, no cookies, no JS-handshake. Identical access discipl
 
 ## Rate limit & throttle
 
-Not characterised — these are CDN-cached static files, expected to be effectively unlimited within polite ranges. For a one-shot historical pull of ~17 years of monthly XLS (~200 files at 100–150 KB each = ~25 MB), 1 file/sec with a 0.5 s sleep margin is conservative.
+Not characterised, these are CDN-cached static files, expected to be effectively unlimited within polite ranges. For a one-shot historical pull of ~17 years of monthly XLS (~200 files at 100–150 KB each = ~25 MB), 1 file/sec with a 0.5 s sleep margin is conservative.
 
 ## Coverage decision
 
-**This endpoint is NOT a substitute for per-fund AUM in a per-fund capacity signal.** A per-fund capacity-strain signal needs `AUM(scheme_code, month)` — per-fund granularity, because the diagnostic fires when *a single fund* is being forced up the market-cap curve by its own size.
+**This endpoint is NOT a substitute for per-fund AUM in a per-fund capacity signal.** A per-fund capacity-strain signal needs `AUM(scheme_code, month)`, per-fund granularity, because the diagnostic fires when *a single fund* is being forced up the market-cap curve by its own size.
 
 What this endpoint provides:
-- AUM(SEBI category, month) — e.g. all Small-cap Funds aggregated to a single row
+- AUM(SEBI category, month), e.g. all Small-cap Funds aggregated to a single row
 - No per-AMC, no per-scheme breakdown
 - No per-fund holdings information
 
@@ -135,15 +135,15 @@ Use cases this DOES support (none of which are blocking the current build plan):
 ## What is still missing
 
 Per-fund AUM time series remains gated on either:
-1. **— LODR Reg 31 ingest** (quarterly, ~2000 listed companies, XBRL parsing). This is the original plan; not shortened by this discovery.
-2. **Per-AMC monthly factsheet scraping** (~45 AMCs × heterogeneous PDF/XLSX formats × monthly). Substantially harder than because each AMC publishes in its own house format; no industry-wide standard.
+1. **LODR Reg 31 ingest** (quarterly, ~2000 listed companies, XBRL parsing). The original plan; not shortened by this discovery.
+2. **Per-AMC monthly factsheet scraping** (~45 AMCs × heterogeneous PDF/XLSX formats × monthly). Substantially harder, because each AMC publishes in its own house format with no industry-wide standard.
 3. **A paid aggregator** (Morningstar India, Value Research Pro, Bloomberg). Outside the ₹2K/mo budget unless reframed.
 
 ## Caveats
 
 - These are **legacy static-asset URLs** on a subdomain (`portal.amfiindia.com`) that does not host the new Next.js site. If AMFI ever sunsets this subdomain, this catalogue entry breaks. Track via periodic HEAD requests.
-- `am{mmm}{yyyy}repo.xls` filenames are lowercase month, no separator. Some quarters use `reporevised` instead of `repo` — handle by trying both URLs and preferring the revised file when it exists.
-- The XLS files are BIFF8 (`Composite Document File V2`) — use `xlrd 2.x` to parse; `openpyxl` will reject as "old xls" because it only handles xlsx.
+- `am{mmm}{yyyy}repo.xls` filenames are lowercase month, no separator. Some quarters use `reporevised` instead of `repo`, handle by trying both URLs and preferring the revised file when it exists.
+- The XLS files are BIFF8 (`Composite Document File V2`), use `xlrd 2.x` to parse; `openpyxl` will reject as "old xls" because it only handles xlsx.
 - "Average Net AUM" (col 8) is the per-month average and is the metric distributors use for commission slabs; "Net AUM as on month-end" (col 7) is the point-in-time snapshot. For a per-fund capacity signal use cases (if we ever do industry-context work) prefer col 8 to align with how the industry quotes AUM.
 - Values are in **Rs. crore** (= 10 million Rs).
 - Row order is stable: SEBI category labels in col 1 have not changed since at least 2018. New categories (e.g. `Banking and PSU Fund`, `Floater Fund`) inserted via reordering, not renumbering, so name-match by `Scheme Name` not sr index.
@@ -151,5 +151,5 @@ Per-fund AUM time series remains gated on either:
 
 ## Provenance
 
-- Discovery: 2026-06-01 — embedded as href targets in the SSR'd Strapi payload of `https://www.amfiindia.com/research-information/amfi-data`. Extracted via `curl | grep -oE 'https?://[^"\\ ]{4,200}\.(xls|xlsx|pdf)'`.
+- Discovery: 2026-06-01, embedded as href targets in the SSR'd Strapi payload of `https://www.amfiindia.com/research-information/amfi-data`. Extracted via `curl | grep -oE 'https?://[^"\\ ]{4,200}\.(xls|xlsx|pdf)'`.
 - Verification: parsed Apr-2026 XLS with xlrd, confirmed `MCR_Report` structure end-to-end.
