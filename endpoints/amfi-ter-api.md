@@ -126,7 +126,7 @@ AMFI rate-limits **aggressively**, far more than NSE Indices. Characterised acro
 
 **Production recommendation**: 1 s sleep + exponential backoff. Full all-AMCs × 1-month census = ~10–15 min wall.
 
-The rate-limit's "bad JSON instead of HTTP 429" pattern means **you cannot rely on `response.status_code`**, you must `try: json.loads(body)` and treat parse failure as a rate-limit signal. This is documented in `scripts/fetch_amfi_ter.py`.
+The rate-limit's "bad JSON instead of HTTP 429" pattern means **you cannot rely on `response.status_code`**, you must `try: json.loads(body)` and treat parse failure as a rate-limit signal. The Python wrapper's `amfi.fetch_ter()` implements this retry pattern.
 
 ## Name-match strategy (joining to a scheme dimension table you maintain locally)
 

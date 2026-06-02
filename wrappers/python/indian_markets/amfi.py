@@ -9,6 +9,7 @@ Wire specs:
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from dataclasses import dataclass
@@ -17,6 +18,8 @@ from decimal import Decimal, InvalidOperation
 from typing import Iterator
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 UA = "indian-markets-py/0.1 (+https://github.com/satwikbasu/indian-market-data-endpoints)"
 NAVALL_URL = "https://portal.amfiindia.com/spages/NAVAll.txt"
@@ -60,9 +63,13 @@ def _classify_section(line: str) -> tuple[str, str, str | None]:
 
 def fetch_navall_text(timeout: float = 30.0) -> str:
     """Fetch the raw NAVAll.txt body. ~3 MB."""
+    log.info("AMFI NAVAll: GET %s (timeout=%.0fs)", NAVALL_URL, timeout)
+    t0 = time.monotonic()
     with httpx.Client(timeout=timeout, headers={"User-Agent": UA}) as c:
         r = c.get(NAVALL_URL)
         r.raise_for_status()
+        log.info("AMFI NAVAll: OK %.2f MB in %.1fs",
+                 len(r.content) / 1e6, time.monotonic() - t0)
         return r.text
 
 
@@ -124,13 +131,20 @@ def fetch_navhistory_text(
     Dates: 'DD-MMM-YYYY' (e.g. '01-Jan-2024').
     """
     params = {"frmdt": from_date, "todt": to_date}
+    log.info("AMFI NAV history: GET %s..%s", from_date, to_date)
     with httpx.Client(timeout=timeout, headers={"User-Agent": UA}) as c:
         for attempt in range(retries):
+            t0 = time.monotonic()
             r = c.get(NAVHIST_URL, params=params)
             r.raise_for_status()
             if len(r.content) > STUB_BODY_BYTES_MAX:
+                log.info("AMFI NAV history: OK %d bytes in %.1fs",
+                         len(r.content), time.monotonic() - t0)
                 return r.text
-            time.sleep(5 * (attempt + 1))
+            backoff = 5 * (attempt + 1)
+            log.warning("AMFI NAV history: stub body (%d bytes) on attempt %d/%d; sleeping %.0fs",
+                        len(r.content), attempt + 1, retries, backoff)
+            time.sleep(backoff)
         raise RuntimeError(f"NAV history stub body after {retries} attempts ({from_date}..{to_date})")
 
 
@@ -181,10 +195,13 @@ def fetch_navhistory_rows(from_date: str, to_date: str) -> Iterator[NavRow]:
 
 def fetch_amc_list(timeout: float = 30.0) -> list[dict]:
     """List of ~55 AMCs with mfId. Use mfId for fetch_ter()."""
+    log.info("AMFI AMC list: GET %s", TER_AMC_LIST_URL)
     with httpx.Client(timeout=timeout, headers={"User-Agent": UA}) as c:
         r = c.get(TER_AMC_LIST_URL)
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        log.info("AMFI AMC list: %d AMCs", len(data))
+        return data
 
 
 def fetch_ter(
@@ -202,15 +219,21 @@ def fetch_ter(
         "strCat": str_cat, "strType": str_type, "page": "1", "pageSize": str(page_size),
     }
     backoff = 2.0
+    log.info("AMFI TER: mf_id=%s month=%s", mf_id, month)
     with httpx.Client(timeout=timeout, headers={"User-Agent": UA}) as c:
         for attempt in range(retries):
+            t0 = time.monotonic()
             r = c.get(TER_DATA_URL, params=params)
             r.raise_for_status()
             try:
                 payload = r.json()
+                data = payload.get("data", [])
+                log.info("AMFI TER: %d rows in %.1fs", len(data), time.monotonic() - t0)
                 time.sleep(sleep_s)
-                return payload.get("data", [])
-            except json.JSONDecodeError:
+                return data
+            except json.JSONDecodeError as exc:
+                log.warning("AMFI TER: %s on attempt %d/%d (%d bytes); sleeping %.0fs",
+                            type(exc).__name__, attempt + 1, retries, len(r.content), backoff)
                 if attempt == retries - 1:
                     raise
                 time.sleep(backoff)
@@ -239,9 +262,13 @@ def fetch_aaum_bytes(year: int, month: int, *, prefer_revised: bool = True,
         (AAUM_MONTHLY_URL_FMT.format(mmm=mmm, yyyy=year, ext="xls"), "xls"),
         (AAUM_MONTHLY_URL_FMT.format(mmm=mmm, yyyy=year, ext="pdf"), "pdf"),
     ])
+    log.info("AMFI AAUM: trying %d candidate URLs for %d-%02d", len(candidates), year, month)
     with httpx.Client(timeout=timeout, headers={"User-Agent": UA}, follow_redirects=True) as c:
         for url, fmt in candidates:
+            t0 = time.monotonic()
             r = c.get(url)
+            log.info("AMFI AAUM: %s -> HTTP %d (%d bytes) in %.1fs",
+                     url, r.status_code, len(r.content), time.monotonic() - t0)
             if r.status_code == 200 and len(r.content) > 5_000:
                 return r.content, fmt
     raise FileNotFoundError(f"no AAUM file for {year}-{month:02d}")

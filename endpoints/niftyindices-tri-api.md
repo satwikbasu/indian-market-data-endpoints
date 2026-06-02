@@ -35,8 +35,14 @@ User-Agent: <any normal browser UA>
 | `Content-Type: application/json; charset=UTF-8` | yes | Server rejects other content types |
 | `X-Requested-With: XMLHttpRequest` | yes | ASP.NET ScriptService gate |
 | `Referer` | yes (defensive) | Akamai bot detection samples on Referer; mismatch = 403 in some cases |
-| `User-Agent` | yes (defensive) | Any browser UA works; empty/curl/wget UAs occasionally 403 |
+| `User-Agent` | **yes** | Must be browser-like (e.g. `Mozilla/5.0 ...`). See the UA trap below — non-browser UAs do NOT 403, they **silently stall** indefinitely. |
 | Cookies | **no** | Tested cold-curl with no prior GET, works |
+
+### User-Agent trap (load-bearing, observed 2026-06-02)
+
+A non-browser UA (e.g. `mytool/0.1`, `python-httpx/0.27`, `curl/8.x`) does **not** return 403. The server accepts the POST and then never sends a response body. The client's read-timeout fires eventually (often 60-120 s); retries hit the same stall. Diagnosis is easy if you compare against `curl -H 'User-Agent: Mozilla/5.0 ...'`, which returns in <1 s.
+
+Use a UA that starts with `Mozilla/5.0`. A suffix identifying your client is fine: `Mozilla/5.0 (X11; Linux x86_64) ... your-tool/0.1` works.
 
 ### Response shape
 
@@ -154,7 +160,7 @@ Discovered in the same Playwright session:
 
 ## Caveats
 
-- **Cookies are not currently required, but Akamai's bot detection can change overnight.** Production scrapers should bootstrap a cookie jar by GETting `https://www.niftyindices.com/reports/historical-data` first as a defensive measure.
+- **Cookies are not currently required, but Akamai's bot detection can change overnight.** Production scrapers should bootstrap a cookie jar by GETting `https://www.niftyindices.com/reports/historical-data` first as a defensive measure. Give that bootstrap GET a **short sub-timeout (5 s)** — when Akamai is hostile, the HTML page can hang while the API endpoint still answers. The Python wrapper does this.
 - The `cinfo` string-with-single-quotes payload format is unusual. **Do not** swap to standard JSON nested object on this endpoint, the server's deserialiser expects a string, not an object. (Tested: `{"cinfo":{"name":"NIFTY 50",...}}` returns `{"d":"[]"}`.)
 - Earlier web sources (StackOverflow circa 2020) claim a ~50-day-per-call chunking limit. **This is wrong as of 2026-05-22.** Verified single-call returns of 27-year ranges (~7K rows) succeed.
 - The endpoint family includes legacy ASP.NET `.axd` URLs (`ScriptResource.axd`), these are not data endpoints; don't try to call them.

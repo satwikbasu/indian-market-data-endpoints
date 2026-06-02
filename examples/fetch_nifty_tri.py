@@ -6,9 +6,12 @@ Usage:
     pip install -e ../wrappers/python
     python fetch_nifty_tri.py
 """
+import logging
 from datetime import date, timedelta
 
 from indian_markets import nse
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 def cagr(start_value: float, end_value: float, years: float) -> float:
@@ -22,10 +25,14 @@ def main() -> None:
     end = today.strftime("%d-%b-%Y")
     start = "01-Jan-1999"
 
-    for name in ("NIFTY 50", "NIFTY MIDCAP 150", "NIFTY SMALLCAP 250"):
+    names = ("NIFTY 50", "NIFTY MIDCAP 150", "NIFTY SMALLCAP 250")
+    print(f"fetching TRI for {len(names)} indices (inception-to-today; "
+          f"each request can take 30-90s on the niftyindices server) ...", flush=True)
+    for i, name in enumerate(names, 1):
+        print(f"\n[{i}/{len(names)}] {name} ...", flush=True)
         rows = nse.fetch_tri(name, start, end)
         if not rows:
-            print(f"{name}: no data (check canonical name)")
+            print(f"{name}: no data (check canonical name)", flush=True)
             continue
 
         # rows are most-recent-first
@@ -41,7 +48,7 @@ def main() -> None:
         years = (today - five_years_ago).days / 365.25
         r = cagr(old, latest, years) * 100
 
-        print(f"{name:<22}  TRI {old:>10.2f} ({old_date})  →  {latest:>10.2f} ({rows[0]['Date']})  CAGR {r:+.2f}% / yr")
+        print(f"{name:<22}  TRI {old:>10.2f} ({old_date})  →  {latest:>10.2f} ({rows[0]['Date']})  CAGR {r:+.2f}% / yr", flush=True)
 
 
 if __name__ == "__main__":

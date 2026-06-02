@@ -44,7 +44,7 @@ Index Name,Index Date,Open,High,Low,Closing,Points Change,Change(%),Volume,Turno
 | **Weekends / holidays = 404** | `fetch_indices_csv()` returns `None` and the caller skips. No silent "empty body" failure. |
 | **Short-body anomaly** | Real files are 16–20 KB. Anything noticeably smaller (< 5 KB) is an NSE error page served as 200, defensive retry with 5 s / 15 s backoff. |
 | **`Index Date` ≠ filename date** | The filename has the request date in `DDMMYYYY`; the in-CSV `Index Date` is the actual data date in `DD-MM-YYYY`. They always match in practice but the parser should trust the in-CSV value. |
-| **Transport-level read timeouts** | NSE archive occasionally takes >30 s; we wrap `httpx.TimeoutException` / `httpx.NetworkError` in the same retry loop as 5xx. run #2 died here on a one-off NSE read timeout. |
+| **Transport-level read timeouts** | NSE archive occasionally takes >30 s. Wrap `httpx.TimeoutException` / `httpx.NetworkError` in the same retry loop as 5xx; a one-shot retry with backoff is usually enough. |
 | **Derivative indices with `-` values** | Filter them out at parse time, not at the SQL layer. |
 | **No future-dated requests** | Requesting today's CSV before ~6 PM IST returns 404; NSE doesn't pre-publish. |
 

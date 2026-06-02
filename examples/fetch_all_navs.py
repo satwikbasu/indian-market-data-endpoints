@@ -6,12 +6,17 @@ Usage:
     pip install -e ../wrappers/python
     python fetch_all_navs.py
 """
+import logging
+
 from indian_markets import amfi
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 def main() -> None:
+    print("fetching AMFI NAVAll.txt (~3 MB) ...", flush=True)
     rows = list(amfi.fetch_navall_rows())
-    print(f"parsed {len(rows):,} schemes from AMFI NAVAll.txt")
+    print(f"parsed {len(rows):,} schemes from AMFI NAVAll.txt", flush=True)
 
     equity = [r for r in rows if "Equity" in r.scheme_category]
     print(f"  of which {len(equity):,} are equity schemes")

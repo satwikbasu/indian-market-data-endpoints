@@ -12,10 +12,13 @@ without Origin returns clean JSON.
 """
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 # Browser-like UA is required; a non-browser UA returns the SPA shell.
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -47,8 +50,10 @@ def fetch_shareholding_index(
     """
     params = {"scripcode": str(scripcode), "flag": flag, "indtype": indtype}
     backoff = 2.0
+    log.info("BSE shareholding index: scripcode=%s flag=%s", scripcode, flag)
     with httpx.Client(timeout=timeout, headers=_HEADERS, follow_redirects=False) as c:
         for attempt in range(retries):
+            t0 = time.monotonic()
             try:
                 r = c.get(_API_BASE, params=params)
                 r.raise_for_status()
@@ -61,10 +66,16 @@ def fetch_shareholding_index(
                         "or User-Agent is not browser-like enough."
                     )
                 data = r.json()
-                return data.get("Table", []) or []
-            except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError):
+                table = data.get("Table", []) or []
+                log.info("BSE shareholding index: %d filings in %.1fs",
+                         len(table), time.monotonic() - t0)
+                return table
+            except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError) as exc:
+                log.warning("BSE shareholding index: %s on attempt %d/%d after %.1fs",
+                            type(exc).__name__, attempt + 1, retries, time.monotonic() - t0)
                 if attempt == retries - 1:
                     raise
+                log.info("BSE shareholding index: sleeping %.0fs before retry", backoff)
                 time.sleep(backoff)
                 backoff *= 2
     return []
@@ -79,7 +90,11 @@ def fetch_xbrl_filing(attachment_path: str, *, timeout: float = 60.0) -> bytes:
     if not attachment_path.startswith("/"):
         attachment_path = "/" + attachment_path
     url = _FILING_BASE + attachment_path
+    log.info("BSE iXBRL filing: GET %s", url)
+    t0 = time.monotonic()
     with httpx.Client(timeout=timeout, headers=_HEADERS, follow_redirects=True) as c:
         r = c.get(url)
         r.raise_for_status()
+        log.info("BSE iXBRL filing: OK %.2f MB in %.1fs",
+                 len(r.content) / 1e6, time.monotonic() - t0)
         return r.content

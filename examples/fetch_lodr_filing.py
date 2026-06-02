@@ -17,35 +17,38 @@ holding ≥1% of the company. Use lxml to walk the ix:* tagged tree:
     # then parse `filing_bytes` and select tags like:
     # //ix:nonNumeric[@name="in-bse-shp:NameOfTheShareHolders"]
 """
+import logging
 import sys
 from pathlib import Path
 
 from indian_markets import bse
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
 
 def main(scripcode: int) -> None:
-    print(f"fetching shareholding filings index for scrip {scripcode}...")
+    print(f"fetching shareholding filings index for scrip {scripcode} ...", flush=True)
     filings = bse.fetch_shareholding_index(scripcode)
     if not filings:
-        print(f"no filings returned for scrip {scripcode}")
+        print(f"no filings returned for scrip {scripcode}", flush=True)
         return
 
-    print(f"found {len(filings)} quarterly filings")
-    print(f"  earliest: {filings[-1].get('sQtrName')}")
-    print(f"  latest:   {filings[0].get('sQtrName')}  ({filings[0].get('EndDate', '')[:10]})")
+    print(f"found {len(filings)} quarterly filings", flush=True)
+    print(f"  earliest: {filings[-1].get('sQtrName')}", flush=True)
+    print(f"  latest:   {filings[0].get('sQtrName')}  ({filings[0].get('EndDate', '')[:10]})", flush=True)
 
     latest = filings[0]
     attachment = latest.get("XBRLAttachment", "")
     if not attachment or not latest.get("IsXBRL"):
-        print("latest filing has no iXBRL attachment; skipping download")
+        print("latest filing has no iXBRL attachment; skipping download", flush=True)
         return
 
-    print(f"\ndownloading iXBRL: {attachment}")
+    print(f"\ndownloading iXBRL: {attachment}", flush=True)
     content = bse.fetch_xbrl_filing(attachment)
     out = Path(f"shp_{scripcode}_{latest.get('EndDate', '')[:10]}.html")
     out.write_bytes(content)
-    print(f"  saved {len(content):,} bytes → {out}")
-    print(f"\nparse with lxml + namespace 'in-bse-shp' to extract MutualFund holder rows.")
+    print(f"  saved {len(content):,} bytes → {out}", flush=True)
+    print(f"\nparse with lxml + namespace 'in-bse-shp' to extract MutualFund holder rows.", flush=True)
 
 
 if __name__ == "__main__":
