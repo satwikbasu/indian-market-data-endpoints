@@ -1,0 +1,42 @@
+name: "🐛 Endpoint broken or doc inaccurate"
+description: An endpoint stopped working, returned unexpected data, or the doc is wrong
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: endpoint
+    attributes:
+      label: Which endpoint?
+      placeholder: "e.g. endpoints/amfi-ter-api.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: What did you observe?
+      description: HTTP status, body shape, error message — be specific.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did the doc say to expect?
+    validations:
+      required: true
+
+  - type: input
+    id: when
+    attributes:
+      label: When did you observe this?
+      placeholder: "YYYY-MM-DD HH:MM IST"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction (curl preferred)
+    validations:
+      required: false

@@ -1,0 +1,70 @@
+name: "📡 New endpoint"
+description: Propose a new undocumented public endpoint to add to the catalogue
+title: "[new-endpoint] "
+labels: ["new-endpoint"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new endpoint! Fill in what you know — the more concrete the better.
+        Endpoints behind paywalls, captchas, or reverse-engineered subscription products do NOT belong here. See [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+  - type: input
+    id: source
+    attributes:
+      label: Source (regulator / exchange / publisher)
+      placeholder: "e.g. SEBI, NSDL, RBI, CDSL, BSE Star MF"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Endpoint URL (template)
+      placeholder: "https://example.in/api/endpoint?param={X}"
+    validations:
+      required: true
+
+  - type: textarea
+    id: data
+    attributes:
+      label: What data does it return?
+      description: One paragraph. Be specific about granularity (per-scheme, per-date, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    id: discovery
+    attributes:
+      label: How did you discover it?
+      description: DevTools network tab? JS bundle inspection? Page-form driving? Be specific so others can reproduce.
+    validations:
+      required: true
+
+  - type: textarea
+    id: quirks
+    attributes:
+      label: Quirks / gotchas
+      description: "Header traps, rate limits, unusual auth, response format weirdness. List anything that burned you an hour."
+    validations:
+      required: false
+
+  - type: input
+    id: curl
+    attributes:
+      label: Working curl (or equivalent)
+      placeholder: "curl -sL ..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope-check
+    attributes:
+      label: Scope check
+      options:
+        - label: "This endpoint is publicly accessible (no paywall, no subscriber login)"
+          required: true
+        - label: "The data is regulatory disclosure or exchange-public, not proprietary"
+          required: true
+        - label: "I am not reverse-engineering a paid product's internal API"
+          required: true
